@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="cscms-temp-storage" />
+    <title>CSCMS Temp Storage</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="site-title">
+      <div>CSCMS Temp Storage</div>
+    </div>
+    <div class="file-input" id="drop-area">
+      <input id="upload-file" type="file" name="file" />
+      <div class="upload-content">
+        <div class="upload-image"></div>
+        <div class="upload-button">Upload File</div>
+        <div>or drop a file</div>
+      </div>
+    </div>
+    <div id="success-modal" class="modal">
+      <div class="modal-content">
+        <div class="title">This is url for access file</div>
+        <div class="url-link">
+          <div id="url"></div>
+          <div id="copy">Copy Link</div>
+        </div>
+      </div>
+    </div>
+  </body>
+
+  <style>
+    body {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 300;
+      display: flex;
+      flex-flow: column;
+      justify-content: center;
+      align-items: center;
+      background-image: linear-gradient(
+        to right top,
+        #d16ba5,
+        #c777b9,
+        #ba83ca,
+        #aa8fd8,
+        #9a9ae1,
+        #8aa7ec,
+        #79b3f4,
+        #69bff8,
+        #52cffe,
+        #41dfff,
+        #46eefa,
+        #5ffbf1
+      );
+      height: 100vh;
+      width: 100vw;
+      margin: 0;
+      padding: 0;
+    }
+    .site-title {
+      padding: 1rem 0 2rem 0;
+      display: flex;
+      justify-content: center;
+    }
+    .site-title > div {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(20);
+      box-shadow: 1px 1px 30px 0px rgba(51, 51, 51, 0.5);
+      padding: 1rem;
+      font-size: 2rem;
+      font-weight: 500;
+    }
+    .upload-content {
+      display: flex;
+      flex-flow: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .upload-button {
+      background: #1a73e8;
+      padding: 1rem 2rem;
+      color: #fff;
+      font-weight: 500;
+      border-radius: 2rem;
+      margin: 1rem;
+    }
+    .upload-image {
+      width: 90px;
+      height: 120px;
+      background: url("/document-logo.png");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+    .file-input {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 70vh;
+      height: 70vh;
+      cursor: pointer;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow: 1px 1px 50px 0px rgba(51, 51, 51, 0.5);
+    }
+    .file-input input {
+      display: none;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgb(0, 0, 0);
+      background-color: rgba(0, 0, 0, 0.4);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      border-radius: 25px;
+      background-color: #fefefe;
+      padding: 4rem 6rem;
+      display: flex;
+      flex-flow: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content .title {
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+    }
+    .modal-content .url-link {
+      display: flex;
+      align-items: center;
+    }
+    .modal-content .url-link .copy {
+      border: 1px solid #ccc;
+      background: white;
+      padding: 0.25rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .modal-content .url-link .copy:hover {
+      background: rgba(239, 239, 239, 0.667);
+    }
+    .modal-content .url-link #url {
+      flex: 1;
+      margin-right: 0.5rem;
+    }
+  </style>
+  <script>
+    const uploadHandle = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const file = e.dataTransfer.files;
+      if (file.length > 0) {
+        uploadFile(file);
+      }
+    };
+    const handleOpen = () => {
+      document.getElementById("upload-file").click();
+    };
+    const handleUploadFile = (e) => {
+      uploadFile(e.target.files[0]);
+    };
+    const closeModal = (e) => {
+      if (e.target.className === "modal") {
+        document.getElementById("success-modal").style.display = "none";
+      }
+    };
+    const copyText = () => {
+      var text = document.getElementById("url").innerText;
+      var int = document.createElement("input");
+      int.value = text;
+      document.querySelector("body").appendChild(int);
+      int.select();
+      int.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+      document.querySelector("body").removeChild(int);
+    };
+    const uploadFile = (file) => {
+      let formData = new FormData();
+      formData.append("file", file);
+      fetch("http://localhost:5000/upload", {
+        method: "POST",
+        body: formData,
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          document.getElementById("success-modal").style.display = "flex";
+          document.getElementById("url").innerText = data.url;
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    };
+
+    let dropArea = document.getElementById("drop-area");
+    dropArea.addEventListener("dragenter", uploadHandle, false);
+    dropArea.addEventListener("dragleave", uploadHandle, false);
+    dropArea.addEventListener("dragover", uploadHandle, false);
+    dropArea.addEventListener("drop", uploadHandle, false);
+    dropArea.addEventListener("click", handleOpen, false);
+    document
+      .getElementById("upload-file")
+      .addEventListener("change", handleUploadFile, false);
+    document
+      .getElementById("copy")
+      .addEventListener("click", copyText, false);
+    document
+      .getElementById("success-modal")
+      .addEventListener("click", closeModal, false);
+  </script>
+</html>
