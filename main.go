@@ -14,6 +14,7 @@ func main() {
 		log.Fatalf("Error loading .env file")
 	}
 	fmt.Println()
+	// TODO: Setup Gin
 	//err := uploadToGCS()
 	//if err != nil {
 	//	fmt.Println(err)

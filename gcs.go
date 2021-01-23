@@ -51,6 +51,8 @@ func uploadToGCS() error {
 	}
 	fmt.Println("Uploaded")
 	return nil
+
+	// TODO: Setup Redis
 }
 
 func getSignedURL () (string, error) {
