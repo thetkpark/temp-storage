@@ -1,27 +1,52 @@
 package main
 
 import (
-	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"log"
+	"net/http"
+	"os"
 )
 
 func main() {
-	// load .env file from given path
-	// we keep it empty it will load .env from current directory
+	// load .env file
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
-	fmt.Println()
-	// TODO: Setup Gin
-	//err := uploadToGCS()
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
-	//url, err := getSignedURL()
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
-	//fmt.Println(url)
+	port := os.Getenv("PORT")
+	if len(port) < 1 {
+		port = "5000"
+	}
+
+	// Setup Gin
+	router := gin.Default()
+
+	router.POST("/api/file", func(ctx *gin.Context) {
+		f, uploadedFile, err := ctx.Request.FormFile("file")
+		if err != nil {
+			ErrorHandler(err, ctx)
+			return
+		}
+		defer f.Close()
+
+		err = uploadToGCS(&f, uploadedFile.Filename)
+		if err != nil {
+			ErrorHandler(err, ctx)
+			return
+		}
+
+	})
+
+	err = router.Run(":" + port)
+	if err != nil {
+		log.Fatalf("cannot start gin: %v", err)
+	}
+}
+
+func ErrorHandler(err error, ctx *gin.Context) {
+	ctx.JSON(http.StatusInternalServerError, gin.H{
+		"message": err.Error(),
+		"error":   true,
+	})
 }

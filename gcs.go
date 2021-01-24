@@ -7,22 +7,20 @@ import (
 	"google.golang.org/api/option"
 	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"os"
+	"strconv"
 	"time"
 )
 
-var bucketName = os.Getenv("BUCKET_NAME")
-
-
-func uploadToGCS() error {
-
+func uploadToGCS(f *multipart.File, fileName string) error {
+	var bucketName = os.Getenv("BUCKET_NAME")
 	token, err := generateUniqueToken()
 	if err != nil {
 		return fmt.Errorf("generateUniqueToken: %v", err)
 	}
-	var prefix = string(time.Now().Unix()) + "-" + token
-	object := "notes.txt"
-	objectFullpath := prefix + object
+	var prefix = strconv.FormatInt(time.Now().Unix(), 10) + "-" + token
+	objectFullpath := prefix + "/" + fileName
 
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithCredentialsFile("gcs-sa-key.json"))
@@ -31,31 +29,26 @@ func uploadToGCS() error {
 	}
 	defer client.Close()
 
-	// Open local file.
-	f, err := os.Open("notes.txt")
-	if err != nil {
-		return fmt.Errorf("os.Open: %v", err)
-	}
-	defer f.Close()
-
 	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
 	defer cancel()
 
 	// Upload an object with storage.Writer.
 	wc := client.Bucket(bucketName).Object(objectFullpath).NewWriter(ctx)
-	if _, err = io.Copy(wc, f); err != nil {
+	if _, err = io.Copy(wc, *f); err != nil {
 		return fmt.Errorf("io.Copy: %v", err)
 	}
 	if err := wc.Close(); err != nil {
 		return fmt.Errorf("Writer.Close: %v", err)
 	}
-	fmt.Println("Uploaded")
 	return nil
 
-	// TODO: Setup Redis
+	// TODO: Get signed URL
+
+	// TODO: Return signedURL and token
 }
 
-func getSignedURL () (string, error) {
+func getSignedURL() (string, error) {
+	var bucketName = os.Getenv("BUCKET_NAME")
 	object := "notes.txt"
 
 	pkey, err := ioutil.ReadFile("gcs-sa-key.pem")
