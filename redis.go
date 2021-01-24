@@ -16,15 +16,13 @@ func getRedisClient() *redis.Client {
 	return rdb
 }
 
-func SetURLAndToken(token string, url string) error {
-	var ctx = context.Background()
+func SetURLAndToken(ctx context.Context, token string, url string) error {
 	rdb := getRedisClient()
 	err := rdb.SetEX(ctx, token, url, time.Hour*72).Err()
 	return err
 }
 
-func GetURLFromToken(token string) (string, error) {
-	var ctx = context.Background()
+func GetURLFromToken(ctx context.Context, token string) (string, error) {
 	rdb := getRedisClient()
 	url, err := rdb.Get(ctx, token).Result()
 	if err != nil {

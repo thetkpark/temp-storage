@@ -30,32 +30,36 @@ func main() {
 		}
 		defer f.Close()
 
-		signedURL, token, err := uploadToGCS(&f, uploadedFile.Filename)
+		signedURL, token, err := uploadToGCS(ctx, &f, uploadedFile.Filename)
 		if err != nil {
 			ErrorHandler(err, ctx)
 			return
 		}
 
-		err = SetURLAndToken(token, signedURL)
+		err = SetURLAndToken(ctx, token, signedURL)
 		if err != nil {
 			ErrorHandler(err, ctx)
 			return
 		}
 
 		ctx.JSON(http.StatusCreated, gin.H{
-			"URL": os.Getenv("ENTRYPOINT") + "/" + token,
+			"url": os.Getenv("ENTRYPOINT") + "/" + token,
 		})
 	})
 
 	router.GET("/:token", func(ctx *gin.Context) {
 		token := ctx.Param("token")
-		signedURL, err := GetURLFromToken(token)
+		signedURL, err := GetURLFromToken(ctx, token)
 		if err != nil {
 			ErrorHandler(err, ctx)
 			return
 		}
-		ctx.Redirect(http.StatusTemporaryRedirect, signedURL)
+		ctx.Redirect(http.StatusFound, signedURL)
 	})
+
+	//router.NoRoute(func(ctx *gin.Context) {
+	//	ctx.File("client/")
+	//})
 
 	err = router.Run(":" + port)
 	if err != nil {

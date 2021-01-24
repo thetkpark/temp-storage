@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func uploadToGCS(f *multipart.File, fileName string) (string, string, error) {
+func uploadToGCS(ginContext context.Context, f *multipart.File, fileName string) (string, string, error) {
 	var bucketName = os.Getenv("BUCKET_NAME")
 	token, err := generateUniqueToken()
 	if err != nil {
@@ -22,14 +22,13 @@ func uploadToGCS(f *multipart.File, fileName string) (string, string, error) {
 	var prefix = strconv.FormatInt(time.Now().Unix(), 10) + "-" + token
 	objectFullpath := prefix + "/" + fileName
 
-	ctx := context.Background()
-	client, err := storage.NewClient(ctx, option.WithCredentialsFile("gcs-sa-key.json"))
+	client, err := storage.NewClient(ginContext, option.WithCredentialsFile("gcs-sa-key.json"))
 	if err != nil {
 		return "", "", fmt.Errorf("storage.NewClient: %v", err)
 	}
 	defer client.Close()
 
-	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
+	ctx, cancel := context.WithTimeout(ginContext, time.Second*30)
 	defer cancel()
 
 	// Upload an object with storage.Writer.
