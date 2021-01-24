@@ -13,11 +13,11 @@ import (
 	"time"
 )
 
-func uploadToGCS(f *multipart.File, fileName string) error {
+func uploadToGCS(f *multipart.File, fileName string) (string, string, error) {
 	var bucketName = os.Getenv("BUCKET_NAME")
 	token, err := generateUniqueToken()
 	if err != nil {
-		return fmt.Errorf("generateUniqueToken: %v", err)
+		return "", "", fmt.Errorf("generateUniqueToken: %v", err)
 	}
 	var prefix = strconv.FormatInt(time.Now().Unix(), 10) + "-" + token
 	objectFullpath := prefix + "/" + fileName
@@ -25,7 +25,7 @@ func uploadToGCS(f *multipart.File, fileName string) error {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithCredentialsFile("gcs-sa-key.json"))
 	if err != nil {
-		return fmt.Errorf("storage.NewClient: %v", err)
+		return "", "", fmt.Errorf("storage.NewClient: %v", err)
 	}
 	defer client.Close()
 
@@ -35,21 +35,24 @@ func uploadToGCS(f *multipart.File, fileName string) error {
 	// Upload an object with storage.Writer.
 	wc := client.Bucket(bucketName).Object(objectFullpath).NewWriter(ctx)
 	if _, err = io.Copy(wc, *f); err != nil {
-		return fmt.Errorf("io.Copy: %v", err)
+		return "", "", fmt.Errorf("io.Copy: %v", err)
 	}
 	if err := wc.Close(); err != nil {
-		return fmt.Errorf("Writer.Close: %v", err)
+		return "", "", fmt.Errorf("Writer.Close: %v", err)
 	}
-	return nil
 
 	// TODO: Get signed URL
+	signedUrl, err := getSignedURL(objectFullpath)
+	if err != nil {
+		return "", "", fmt.Errorf("getSignedURL: %v", err)
+	}
 
 	// TODO: Return signedURL and token
+	return signedUrl, token, nil
 }
 
-func getSignedURL() (string, error) {
+func getSignedURL(object string) (string, error) {
 	var bucketName = os.Getenv("BUCKET_NAME")
-	object := "notes.txt"
 
 	pkey, err := ioutil.ReadFile("gcs-sa-key.pem")
 	if err != nil {

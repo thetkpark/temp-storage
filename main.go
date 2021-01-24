@@ -30,12 +30,31 @@ func main() {
 		}
 		defer f.Close()
 
-		err = uploadToGCS(&f, uploadedFile.Filename)
+		signedURL, token, err := uploadToGCS(&f, uploadedFile.Filename)
 		if err != nil {
 			ErrorHandler(err, ctx)
 			return
 		}
 
+		err = SetURLAndToken(token, signedURL)
+		if err != nil {
+			ErrorHandler(err, ctx)
+			return
+		}
+
+		ctx.JSON(http.StatusCreated, gin.H{
+			"URL": os.Getenv("ENTRYPOINT") + "/" + token,
+		})
+	})
+
+	router.GET("/:token", func(ctx *gin.Context) {
+		token := ctx.Param("token")
+		signedURL, err := GetURLFromToken(token)
+		if err != nil {
+			ErrorHandler(err, ctx)
+			return
+		}
+		ctx.Redirect(http.StatusTemporaryRedirect, signedURL)
 	})
 
 	err = router.Run(":" + port)
