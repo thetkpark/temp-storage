@@ -1,30 +1,27 @@
-package main
+package utils
 
 import (
+	"bytes"
 	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
 	"google.golang.org/api/option"
 	"io"
 	"io/ioutil"
-	"mime/multipart"
 	"os"
 	"strconv"
 	"time"
 )
 
-func uploadToGCS(ginContext context.Context, f *multipart.File, fileName string) (string, string, error) {
+func UploadToGCS(ginContext context.Context, f *bytes.Buffer, token string, fileName string) (string, error) {
 	var bucketName = os.Getenv("BUCKET_NAME")
-	token, err := generateUniqueToken()
-	if err != nil {
-		return "", "", fmt.Errorf("generateUniqueToken: %v", err)
-	}
+
 	var prefix = strconv.FormatInt(time.Now().Unix(), 10) + "-" + token
-	objectFullpath := prefix + "/" + fileName
+	objectFilepath := prefix + "/" + fileName
 
 	client, err := storage.NewClient(ginContext, option.WithCredentialsFile("gcs-sa-key.json"))
 	if err != nil {
-		return "", "", fmt.Errorf("storage.NewClient: %v", err)
+		return "", fmt.Errorf("storage.NewClient: %v", err)
 	}
 	defer client.Close()
 
@@ -32,22 +29,22 @@ func uploadToGCS(ginContext context.Context, f *multipart.File, fileName string)
 	defer cancel()
 
 	// Upload an object with storage.Writer.
-	wc := client.Bucket(bucketName).Object(objectFullpath).NewWriter(ctx)
-	if _, err = io.Copy(wc, *f); err != nil {
-		return "", "", fmt.Errorf("io.Copy: %v", err)
+	wc := client.Bucket(bucketName).Object(objectFilepath).NewWriter(ctx)
+	if _, err = io.Copy(wc, f); err != nil {
+		return "", fmt.Errorf("io.Copy: %v", err)
 	}
 	if err := wc.Close(); err != nil {
-		return "", "", fmt.Errorf("Writer.Close: %v", err)
+		return "", fmt.Errorf("Writer.Close: %v", err)
 	}
 
 	// TODO: Get signed URL
-	signedUrl, err := getSignedURL(objectFullpath)
+	signedUrl, err := getSignedURL(objectFilepath)
 	if err != nil {
-		return "", "", fmt.Errorf("getSignedURL: %v", err)
+		return "", fmt.Errorf("getSignedURL: %v", err)
 	}
 
 	// TODO: Return signedURL and token
-	return signedUrl, token, nil
+	return signedUrl, nil
 }
 
 func getSignedURL(object string) (string, error) {
