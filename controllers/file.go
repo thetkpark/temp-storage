@@ -14,6 +14,13 @@ func UploadFileController (ctx *gin.Context) {
 		errorHandler(err, ctx)
 		return
 	}
+	if uploadFile.Size > 524288000 {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": true,
+			"message": "File size larget than 500MB",
+		})
+		return
+	}
 	defer f.Close()
 
 	// Generate encryption key
@@ -69,6 +76,13 @@ func GetFileController (ctx *gin.Context) {
 
 	fileData, err := utils.GetFileDataFromToken(ctx, token)
 	if err != nil {
+		if err.Error() == "rdb.Get: redis: nil" {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"message": "Not found",
+				"error":   true,
+			})
+			return
+		}
 		errorHandler(err, ctx)
 		return
 	}
