@@ -8,12 +8,18 @@ import (
 )
 
 func UploadFileController (ctx *gin.Context) {
-	f, uploadedFile, err := ctx.Request.FormFile("file")
+	f, uploadFile, err := ctx.Request.FormFile("file")
 	if err != nil {
 		errorHandler(err, ctx)
 		return
 	}
 	defer f.Close()
+
+	// Generate encryption key
+	key, err := utils.GenerateEncryptionKey()
+	if err != nil {
+		errorHandler(err, ctx)
+	}
 
 	// Generate retrieve token key
 	token, err := utils.GenerateUniqueToken()
@@ -21,20 +27,31 @@ func UploadFileController (ctx *gin.Context) {
 		errorHandler(err, ctx)
 	}
 
-	encryptedBuffer, err := utils.EncryptFile(&f)
+	ObjectName, err := utils.GenerateFileName(); if
+	err != nil {
+		errorHandler(err, ctx)
+	}
+
+	// Create buffer
+	encryptedBuffer, err := utils.EncryptFile(&f, key)
 	if err != nil {
 		errorHandler(err, ctx)
 	}
 
 	// Upload to GCS and get signedURL
-	signedURL, err := utils.UploadToGCS(ctx, encryptedBuffer, token, uploadedFile.Filename)
+	_, err = utils.UploadToGCS(ctx, encryptedBuffer, ObjectName)
 	if err != nil {
 		errorHandler(err, ctx)
 		return
 	}
 
 	// Set URL and token in Redis
-	err = utils.SetURLAndToken(ctx, token, signedURL)
+	var fileData  = utils.FileMetadata{
+		FileName: uploadFile.Filename,
+		Key: key,
+		ObjectName: ObjectName,
+	}
+	err = utils.SetTokenFileData(ctx, token, fileData)
 	if err != nil {
 		errorHandler(err, ctx)
 		return
@@ -48,12 +65,23 @@ func UploadFileController (ctx *gin.Context) {
 
 func GetFileController (ctx *gin.Context) {
 	token := ctx.Param("token")
-	signedURL, err := utils.GetURLFromToken(ctx, token)
+
+	fileData, err := utils.GetFileDataFromToken(ctx, token)
 	if err != nil {
 		errorHandler(err, ctx)
 		return
 	}
-	ctx.Redirect(http.StatusFound, signedURL)
+
+	encryptedFile, err := utils.DownloadFile(fileData.ObjectName)
+	if err != nil {
+		errorHandler(err, ctx)
+		return
+	}
+
+	decryptedFile := utils.DecryptFile(encryptedFile, fileData.Key)
+
+	ctx.Header("Content-Disposition", `attachment; filename="` + fileData.FileName + `"`)
+	ctx.Data(200, "application/octet-stream", *decryptedFile)
 }
 
 func errorHandler(err error, ctx *gin.Context) {

@@ -9,15 +9,11 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"time"
 )
 
-func UploadToGCS(ginContext context.Context, f *bytes.Buffer, token string, fileName string) (string, error) {
+func UploadToGCS(ginContext context.Context, f *bytes.Buffer, fileName string) (string, error) {
 	var bucketName = os.Getenv("BUCKET_NAME")
-
-	var prefix = strconv.FormatInt(time.Now().Unix(), 10) + "-" + token
-	objectFilepath := prefix + "/" + fileName
 
 	client, err := storage.NewClient(ginContext, option.WithCredentialsFile("gcs-sa-key.json"))
 	if err != nil {
@@ -29,7 +25,7 @@ func UploadToGCS(ginContext context.Context, f *bytes.Buffer, token string, file
 	defer cancel()
 
 	// Upload an object with storage.Writer.
-	wc := client.Bucket(bucketName).Object(objectFilepath).NewWriter(ctx)
+	wc := client.Bucket(bucketName).Object(fileName).NewWriter(ctx)
 	if _, err = io.Copy(wc, f); err != nil {
 		return "", fmt.Errorf("io.Copy: %v", err)
 	}
@@ -38,7 +34,7 @@ func UploadToGCS(ginContext context.Context, f *bytes.Buffer, token string, file
 	}
 
 	// TODO: Get signed URL
-	signedUrl, err := getSignedURL(objectFilepath)
+	signedUrl, err := getSignedURL(fileName)
 	if err != nil {
 		return "", fmt.Errorf("getSignedURL: %v", err)
 	}
@@ -64,4 +60,31 @@ func getSignedURL(object string) (string, error) {
 		return "", fmt.Errorf("storage.SignedURL: %v", err)
 	}
 	return url, nil
+}
+
+func DownloadFile(object string) (*[]byte, error) {
+	var bucketName = os.Getenv("BUCKET_NAME")
+
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx, option.WithCredentialsFile("gcs-sa-key.json"))
+	if err != nil {
+		return nil, fmt.Errorf("storage.NewClient: %v", err)
+	}
+	defer client.Close()
+
+	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
+	defer cancel()
+
+	rc, err := client.Bucket(bucketName).Object(object).NewReader(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Object(%q).NewReader: %v", object, err)
+	}
+	defer rc.Close()
+
+	data, err := ioutil.ReadAll(rc)
+	if err != nil {
+		return nil, fmt.Errorf("ioutil.ReadAll: %v", err)
+	}
+
+	return &data, nil
 }
