@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"github.com/gin-gonic/gin"
 	"github.com/thetkpark/tempStorage/utils"
 	"net/http"
@@ -39,7 +40,7 @@ func UploadFileController (ctx *gin.Context) {
 	}
 
 	// Upload to GCS and get signedURL
-	_, err = utils.UploadToGCS(ctx, encryptedBuffer, ObjectName)
+	err = utils.UploadToGCS(ctx, encryptedBuffer, ObjectName)
 	if err != nil {
 		errorHandler(err, ctx)
 		return
@@ -47,7 +48,7 @@ func UploadFileController (ctx *gin.Context) {
 
 	// Set URL and token in Redis
 	var fileData  = utils.FileMetadata{
-		FileName: uploadFile.Filename,
+		FileName: base64.StdEncoding.EncodeToString([]byte(uploadFile.Filename)),
 		Key: key,
 		ObjectName: ObjectName,
 	}
@@ -71,8 +72,13 @@ func GetFileController (ctx *gin.Context) {
 		errorHandler(err, ctx)
 		return
 	}
+	fileName, err := base64.StdEncoding.DecodeString(fileData.FileName)
+	if err != nil {
+		errorHandler(err, ctx)
+		return
+	}
 
-	encryptedFile, err := utils.DownloadFile(fileData.ObjectName)
+	encryptedFile, err := utils.DownloadFile(ctx, fileData.ObjectName)
 	if err != nil {
 		errorHandler(err, ctx)
 		return
@@ -80,7 +86,7 @@ func GetFileController (ctx *gin.Context) {
 
 	decryptedFile := utils.DecryptFile(encryptedFile, fileData.Key)
 
-	ctx.Header("Content-Disposition", `attachment; filename="` + fileData.FileName + `"`)
+	ctx.Header("Content-Disposition", `attachment; filename="` + string(fileName) + `"`)
 	ctx.Data(200, "application/octet-stream", *decryptedFile)
 }
 
