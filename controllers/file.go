@@ -1,13 +1,14 @@
 package controllers
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/thetkpark/tempStorage/utils"
 	"net/http"
 	"os"
+
+	"github.com/gin-gonic/gin"
+	"github.com/thetkpark/tempStorage/utils"
 )
 
-func UploadFileController (ctx *gin.Context) {
+func UploadFileController(ctx *gin.Context) {
 	f, uploadedFile, err := ctx.Request.FormFile("file")
 	if err != nil {
 		errorHandler(err, ctx)
@@ -15,6 +16,13 @@ func UploadFileController (ctx *gin.Context) {
 	}
 	defer f.Close()
 
+	if uploadedFile.Size > 104857600 {
+		ctx.JSON(400, gin.H{
+			"message": "File is larger than 100MB",
+			"error":   true,
+		})
+		return
+	}
 	// Generate retrieve token key
 	token, err := utils.GenerateUniqueToken()
 	if err != nil {
@@ -46,7 +54,7 @@ func UploadFileController (ctx *gin.Context) {
 	})
 }
 
-func GetFileController (ctx *gin.Context) {
+func GetFileController(ctx *gin.Context) {
 	token := ctx.Param("token")
 	signedURL, err := utils.GetURLFromToken(ctx, token)
 	if err != nil {
