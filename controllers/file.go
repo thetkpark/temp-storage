@@ -15,22 +15,15 @@ func UploadFileController(ctx *gin.Context) {
 		errorHandler(err, ctx)
 		return
 	}
-	if uploadFile.Size > 524288000 {
+	if uploadFile.Size > 104857600 {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error":   true,
-			"message": "File size larget than 500MB",
+			"message": "File size larget than 100MB",
 		})
 		return
 	}
 	defer f.Close()
 
-	if uploadFile.Size > 104857600 {
-		ctx.JSON(400, gin.H{
-			"message": "File is larger than 100MB",
-			"error":   true,
-		})
-		return
-	}
 	// Generate encryption key
 	key, err := utils.GenerateEncryptionKey()
 	if err != nil {
