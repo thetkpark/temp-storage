@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"time"
@@ -16,17 +17,32 @@ func getRedisClient() *redis.Client {
 	return rdb
 }
 
-func SetURLAndToken(ctx context.Context, token string, url string) error {
+func SetTokenFileData(ctx context.Context, token string, fileData FileMetadata) error {
 	rdb := getRedisClient()
-	err := rdb.SetEX(ctx, token, url, time.Hour*72).Err()
+	jsonString, err := json.Marshal(fileData)
+	if err != nil {
+		return fmt.Errorf("json.marshall: %v", err)
+	}
+	err = rdb.SetEX(ctx, token, jsonString, time.Hour*72).Err()
 	return err
 }
 
-func GetURLFromToken(ctx context.Context, token string) (string, error) {
+func GetFileDataFromToken(ctx context.Context, token string) (FileMetadata, error) {
 	rdb := getRedisClient()
-	url, err := rdb.Get(ctx, token).Result()
+	var fileData FileMetadata
+	data, err := rdb.Get(ctx, token).Result()
 	if err != nil {
-		return "", fmt.Errorf("rdb.Get: %v", err)
+		return fileData, fmt.Errorf("rdb.Get: %v", err)
 	}
-	return url, nil
+	err = json.Unmarshal([]byte(data), &fileData)
+	if err != nil {
+		return fileData, fmt.Errorf("json.Unmarshal: %v", err)
+	}
+	return fileData, nil
+}
+
+type FileMetadata struct {
+	FileName string `json:"fileName"`
+	Key string `json:"key"`
+	ObjectName string `json:"objectName"`
 }
