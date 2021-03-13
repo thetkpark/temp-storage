@@ -28,7 +28,7 @@
         <div class="title">This is url for access file</div>
         <div class="url-link">
           <div id="url"></div>
-          <div id="copy">Copy Link</div>
+          <button id="copy" onclick="copyUrl()">Copy Link</button>
         </div>
       </div>
     </div>
@@ -162,6 +162,17 @@
     }
   </style>
   <script>
+
+  function copyUrl() {
+      //select the element with the id "copyMe", must be a text box
+      var urlToCopy = document.getElementById("url");
+      //select the text in the text box
+      urlToCopy.select();
+      //copy the text to the clipboard
+      document.execCommand("copy");
+  }
+
+
     const uploadHandle = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -194,7 +205,7 @@
     const uploadFile = (file) => {
       let formData = new FormData();
       formData.append("file", file);
-      fetch("https://tmp.cscms.me/api/file", {
+      fetch("http://localhost:5000/api/file", {
         method: "POST",
         body: formData,
       })
