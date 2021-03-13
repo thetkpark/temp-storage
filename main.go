@@ -1,11 +1,12 @@
 package main
 
 import (
+	"log"
+	"os"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/thetkpark/tempStorage/controllers"
-	"log"
-	"os"
 )
 
 func main() {
@@ -22,18 +23,18 @@ func main() {
 	// Setup Gin
 	router := gin.Default()
 
+	// router.StaticFile("/index.html", "/client/index.html")
+
 	router.POST("/api/file", controllers.UploadFileController)
 
 	router.GET("/:token", controllers.GetFileController)
 
-	//router.NoRoute(func(ctx *gin.Context) {
-	//	ctx.File("client/")
-	//})
+	router.NoRoute(func(ctx *gin.Context) {
+		ctx.File("client/")
+	})
 
 	err = router.Run(":" + port)
 	if err != nil {
 		log.Fatalf("cannot start gin: %v", err)
 	}
 }
-
-

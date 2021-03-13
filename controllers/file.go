@@ -75,6 +75,11 @@ func UploadFileController(ctx *gin.Context) {
 func GetFileController(ctx *gin.Context) {
 	token := ctx.Param("token")
 
+	if token == "document-logo.png" {
+		ctx.File("client/document-logo.png")
+		return
+	}
+
 	fileData, err := utils.GetFileDataFromToken(ctx, token)
 	if err != nil {
 		if err.Error() == "rdb.Get: redis: nil" {
