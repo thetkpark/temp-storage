@@ -15,7 +15,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: thetkpark/cscms-url-shortener
+          images: thetkpark/temp-storage
           tags: |
             type=raw,value=latest
             type=sha,format=long,prefix=
