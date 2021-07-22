@@ -1,0 +1,39 @@
+
+name: Build, Push, and Deploy
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: thetkpark/cscms-url-shortener
+          tags: |
+            type=raw,value=latest
+            type=sha,format=long,prefix=
+      - name: Docker Login
+        uses: docker/login-action@v1.10.0
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v2.6.1
+        with:
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+      - name: Trigger Deployment
+        uses: fjogeleit/http-request-action@v1.8.0
+        with:
+          url: https://api.github.com/repos/thetkpark/cscms-services-deployment/dispatches
+          method: POST
+          data: '{"event_type": "temp_storage"}'
+          username: ${{secrets.ACCESS_TOKEN}}
