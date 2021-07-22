@@ -2,20 +2,26 @@ package utils
 
 import (
 	"bytes"
-	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
-	"google.golang.org/api/option"
 	"io"
 	"io/ioutil"
 	"os"
 	"time"
+
+	"cloud.google.com/go/storage"
+	"google.golang.org/api/option"
 )
 
-func UploadToGCS(ginContext context.Context, f *bytes.Buffer, fileName string)  error {
+func UploadToGCS(ginContext context.Context, f *bytes.Buffer, fileName string) error {
 	var bucketName = os.Getenv("BUCKET_NAME")
 
-	client, err := storage.NewClient(ginContext, option.WithCredentialsFile("gcs-sa-key.json"))
+	gcsKeyPath := os.Getenv("GCS_KEY_PATH")
+	if len(gcsKeyPath) < 1 {
+		gcsKeyPath = "gcs-sa-key.json"
+	}
+
+	client, err := storage.NewClient(ginContext, option.WithCredentialsFile(gcsKeyPath))
 	if err != nil {
 		return fmt.Errorf("storage.NewClient: %v", err)
 	}
@@ -56,10 +62,14 @@ func UploadToGCS(ginContext context.Context, f *bytes.Buffer, fileName string)  
 //	return url, nil
 //}
 
-func DownloadFile(ctx context.Context,object string) (*[]byte, error) {
+func DownloadFile(ctx context.Context, object string) (*[]byte, error) {
 	var bucketName = os.Getenv("BUCKET_NAME")
+	gcsKeyPath := os.Getenv("GCS_KEY_PATH")
+	if len(gcsKeyPath) < 1 {
+		gcsKeyPath = "gcs-sa-key.json"
+	}
 
-	client, err := storage.NewClient(ctx, option.WithCredentialsFile("gcs-sa-key.json"))
+	client, err := storage.NewClient(ctx, option.WithCredentialsFile(gcsKeyPath))
 	if err != nil {
 		return nil, fmt.Errorf("storage.NewClient: %v", err)
 	}

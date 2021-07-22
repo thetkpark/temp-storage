@@ -20,6 +20,11 @@ func main() {
 		port = "5000"
 	}
 
+	clientPath := os.Getenv("CLIENT_PATH")
+	if len(clientPath) < 1 {
+		clientPath = "client/"
+	}
+
 	// Setup Gin
 	router := gin.Default()
 
@@ -30,7 +35,7 @@ func main() {
 	router.GET("/:token", controllers.GetFileController)
 
 	router.NoRoute(func(ctx *gin.Context) {
-		ctx.File("client/")
+		ctx.File(clientPath)
 	})
 
 	err = router.Run(":" + port)
