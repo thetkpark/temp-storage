@@ -4,13 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-redis/redis/v8"
+	"os"
 	"time"
+
+	"github.com/go-redis/redis/v8"
 )
 
 func getRedisClient() *redis.Client {
+	redisHost := os.Getenv("REDIS_HOST")
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     redisHost,
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
@@ -42,7 +45,7 @@ func GetFileDataFromToken(ctx context.Context, token string) (FileMetadata, erro
 }
 
 type FileMetadata struct {
-	FileName string `json:"fileName"`
-	Key string `json:"key"`
+	FileName   string `json:"fileName"`
+	Key        string `json:"key"`
 	ObjectName string `json:"objectName"`
 }
