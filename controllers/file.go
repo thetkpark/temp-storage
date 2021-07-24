@@ -11,6 +11,7 @@ import (
 
 func UploadFileController(ctx *gin.Context) {
 	f, uploadFile, err := ctx.Request.FormFile("file")
+	defer f.Close()
 	if err != nil {
 		errorHandler(err, ctx)
 		return
@@ -22,7 +23,6 @@ func UploadFileController(ctx *gin.Context) {
 		})
 		return
 	}
-	defer f.Close()
 
 	// Generate encryption key
 	key, err := utils.GenerateEncryptionKey()

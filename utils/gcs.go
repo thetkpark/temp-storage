@@ -32,6 +32,7 @@ func UploadToGCS(ginContext context.Context, f *bytes.Buffer, fileName string) e
 
 	// Upload an object with storage.Writer.
 	wc := client.Bucket(bucketName).Object(fileName).NewWriter(ctx)
+	defer wc.Close()
 	if _, err = io.Copy(wc, f); err != nil {
 		return fmt.Errorf("io.Copy: %v", err)
 	}
