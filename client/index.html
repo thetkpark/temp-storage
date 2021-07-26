@@ -205,7 +205,7 @@
     const uploadFile = (file) => {
       let formData = new FormData();
       formData.append("file", file);
-      fetch("https://tmp-test.cscms.me/api/file", {
+      fetch("/api/file", {
         method: "POST",
         body: formData,
       })
