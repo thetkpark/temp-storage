@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/thetkpark/tempStorage/controllers"
@@ -25,6 +26,11 @@ func main() {
 
 	// Setup Gin
 	router := gin.Default()
+
+	router.Use(cors.New(cors.Config{
+		AllowAllOrigins: true,
+		AllowMethods:    []string{"GET", "POST"},
+	}))
 
 	// router.StaticFile("/index.html", "/client/index.html")
 
